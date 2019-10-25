@@ -105,14 +105,16 @@ const resolveAddress = (address: string): number =>
 udpPort.on('message', function(oscMsg) {
   rootLogger.debug('OSC', oscMsg)
   const { address, args } = oscMsg
-  const midiMsg = {
-    controller: resolveAddress(address),
-    value: Math.round(128 * args[0].value),
-    channel: 0,
-  }
-  rootLogger.debug('MIDI', midiMsg)
+  try {
+    const midiMsg = {
+      controller: resolveAddress(address),
+      value: Math.round(128 * args[0].value),
+      channel: 0,
+    }
+    rootLogger.debug('MIDI', midiMsg)
 
-  midiOut.send('cc', midiMsg)
+    midiOut.send('cc', midiMsg)
+  } catch (error) { }
 })
 
 udpPort.on('ready', function() {
