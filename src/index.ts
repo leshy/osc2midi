@@ -1,6 +1,10 @@
-import * as os from 'os'
+// import * as os from 'os'
 import _ from 'lodash'
 
+// @ts-ignore
+import * as easyMidi from 'easymidi'
+// @ts-ignore
+import * as mdns from 'mdns'
 import { createLogger, format, transports } from 'winston'
 import { consoleFormat } from 'winston-console-format'
 
@@ -75,16 +79,11 @@ rootLogger.verbose(`log level ${verbose2level(conf.verbose).toUpperCase()}`)
 rootLogger.info('configuration', conf)
 
 if (conf.zeroconf) {
-  const zeroconf = require('zeroconf')()
   const logger = rootLogger.child({ service: 'zeroconf' })
 
-  // @ts-ignore
-  zeroconf.publish({
-    type: 'osc',
-    protocol: 'udp',
-    port: conf.port,
-    name: os.hostname(),
-  })
+  const ad = mdns.createAdvertisement(mdns.udp('osc'), conf.port)
+  ad.start()
+
   logger.verbose('Zeroconf broadcasting')
 }
 
@@ -94,19 +93,27 @@ var udpPort = new osc.UDPPort({
   metadata: true,
 })
 
-// Listen for incoming OSC bundles.
-// @ts-ignore
-udpPort.on('bundle', function(oscBundle, timeTag, info) {
-  console.log(
-    'An OSC bundle just arrived for time tag',
-    timeTag,
-    ':',
-    oscBundle,
-  )
-  console.log('Remote info is: ', info)
-})
-
 udpPort.open()
+
+// @ts-ignore
+var midiOut = new easyMidi.Output('osc2midi', true)
+
+const resolveAddress = (address: string): number =>
+  Number(address[address.length - 1])
+
+// @ts-ignore
+udpPort.on('message', function(oscMsg) {
+  rootLogger.debug('OSC', oscMsg)
+  const { address, args } = oscMsg
+  const midiMsg = {
+    controller: resolveAddress(address),
+    value: Math.round(128 * args[0].value),
+    channel: 0,
+  }
+  rootLogger.debug('MIDI', midiMsg)
+
+  midiOut.send('cc', midiMsg)
+})
 
 udpPort.on('ready', function() {
   rootLogger.info(`OSC listening on UDP ${conf.port}`)
