@@ -99,7 +99,7 @@ udpPort.open()
 var midiOut = new easyMidi.Output('osc2midi', true)
 
 const resolveAddress = (address: string): number =>
-  Number(address[address.length - 1])
+  Number(address[address.length - 1]) - 1
 
 // @ts-ignore
 udpPort.on('message', function(oscMsg) {
