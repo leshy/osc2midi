@@ -10,7 +10,8 @@
     "dist"
   ],
   "scripts": {
-    "start": "tsdx watch",
+    "start": "node ./dist/index.js",
+    "dev": "tsdx watch",
     "build": "tsdx build",
     "test": "tsdx test",
     "lint": "tsdx lint"
